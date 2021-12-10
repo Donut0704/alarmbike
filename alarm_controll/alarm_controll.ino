@@ -32,11 +32,17 @@ unsigned long checkvalues = 0;
 
 Adafruit_MPU6050 mpu;
 
-////////////buzzer////////////
-int buzzer = 2;
+////////////DFRobotDFPlayerMini////////////
+#include "Arduino.h"
+#include "DFRobotDFPlayerMini.h"
+DFRobotDFPlayerMini myDFPlayer;
 
+int indicatorled = 2;
 void setup() {
   Serial.begin(9600);
+  pinMode(indicatorled, OUTPUT);
+  digitalWrite(indicatorled, LOW);
+  myDFPlayer.begin(Serial);
   WiFi.softAP(ssid, password);
   //WiFi.softAPConfig(local_ip, gateway, subnet);
   delay(100);
@@ -47,15 +53,18 @@ void setup() {
   server.onNotFound(handle_NotFound);
 
   server.begin();
-  Serial.println("HTTP server started");
+  //Serial.println("HTTP server started");
   // als de arduino de chip niet vindt, print een error
   if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip");
+    //Serial.println("Failed to find MPU6050 chip");
     while (1) {
-      delay(10);
+      digitalWrite(indicatorled, HIGH);
+      delay(100);
+      digitalWrite(indicatorled, LOW);
+      delay(100);
     }
   }
-  Serial.println("MPU6050 Found!");
+  //Serial.println("MPU6050 Found!");
 
   // De gevoeligheid als de chip beweegt
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
@@ -66,6 +75,7 @@ void loop() {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
   if (alarmon == true) {
+    digitalWrite(indicatorled, HIGH);
     if (millis() - checkvalues >= 100) {
       acceleratiex = a.acceleration.x;
       acceleratiey = a.acceleration.y;
@@ -76,13 +86,21 @@ void loop() {
     }
     if (acceleratiex - 0.30 < a.acceleration.x < acceleratiex + 0.30) {
       beweging = true;
-      Serial.println("beweging");
+      //Serial.println("beweging");
     } else if (acceleratiey - 0.30 < a.acceleration.y < acceleratiey + 0.30) {
       beweging = true;
-      Serial.println("bewegingy");
+      //Serial.println("bewegingy");
     }
   } else {
+    digitalWrite(indicatorled, LOW);
     beweging = false;
+  }
+  if (beweging == true) {
+    myDFPlayer.volume(30);  //Set volume value. From 0 to 30
+    myDFPlayer.play(1);  //Play the first mp3
+  }else{
+     myDFPlayer.volume(0);  //Set volume value. From 0 to 30
+     myDFPlayer.play(1);  //Play the first mp3
   }
 }
 
