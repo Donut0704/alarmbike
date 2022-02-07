@@ -18,11 +18,11 @@ ESP8266WebServer server(80);
 
 bool alarmon = false;
 bool beweging = false;
-int acceleratiex = 0;
-int acceleratiey = 0;
-int acceleratiez = 0;
+float acceleratiex = 0;
+float acceleratiey = 0;
+float acceleratiez = 0;
 unsigned long checkvalues = 0;
-
+bool heeftbewogen = true;
 // Deze bib zorgen ervoor dat de communicatie goed werkt met de accelero
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
@@ -69,6 +69,11 @@ void setup() {
   // De gevoeligheid als de chip beweegt
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  
+  myDFPlayer.volume(30);  //Set volume value. From 0 to 30
+  myDFPlayer.play(1);  //Play the first mp3
+  delay(10);
+  myDFPlayer.pause();
 }
 void loop() {
   server.handleClient();
@@ -80,43 +85,49 @@ void loop() {
       acceleratiex = a.acceleration.x;
       acceleratiey = a.acceleration.y;
       acceleratiez = a.acceleration.z;
-      Serial.println(a.acceleration.x);
-      Serial.println(a.acceleration.y);
-      Serial.println(a.acceleration.x);
+      //Serial.println(a.acceleration.x);
+      //Serial.println(a.acceleration.y);
+      checkvalues = millis();
     }
-    if (acceleratiex - 0.30 < a.acceleration.x < acceleratiex + 0.30) {
+    if (acceleratiex - 0.50 < a.acceleration.x < acceleratiex + 0.50) {
       beweging = true;
       //Serial.println("beweging");
-    } else if (acceleratiey - 0.30 < a.acceleration.y < acceleratiey + 0.30) {
+      //Serial.println(a.acceleration.x);
+      //Serial.println(acceleratiex);
+    } else if (acceleratiey - 0.50 < a.acceleration.y < acceleratiey + 0.50) {
       beweging = true;
-      //Serial.println("bewegingy");
+     //Serial.println("bewegingy");
+     //Serial.println(acceleratiey);
+     //Serial.println(a.acceleration.y);
     }
   } else {
     digitalWrite(indicatorled, LOW);
     beweging = false;
   }
-  if (beweging == true) {
-    myDFPlayer.volume(30);  //Set volume value. From 0 to 30
-    myDFPlayer.play(1);  //Play the first mp3
-  }else{
-     myDFPlayer.volume(0);  //Set volume value. From 0 to 30
-     myDFPlayer.play(1);  //Play the first mp3
+  if (beweging == true && heeftbewogen ==false ) {
+    myDFPlayer.start();
+  
+    heeftbewogen= true;
+  }
+  if (heeftbewogen ==true && beweging == false){
+    myDFPlayer.pause();
+    heeftbewogen = false;
   }
 }
 
 void handle_OnConnect() {
-  Serial.println("server online");
+  //Serial.println("server online");
   server.send(200, "text/html", SendHTML(beweging));
 }
 
 void handle_alarmon() {
-  Serial.println("alarm on");
+ // Serial.println("alarm on");
   alarmon = true;
   server.send(200, "text/html", SendHTML(beweging));
 }
 
 void handle_alarmoff() {
-  Serial.println("alarm off");
+ // Serial.println("alarm off");
   alarmon = false;
   server.send(200, "text/html", SendHTML(beweging));
 }
